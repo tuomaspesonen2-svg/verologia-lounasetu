@@ -6,12 +6,9 @@ const ACCENT = "#2E7D6B";
 const WARM = "#F5F1EC";
 const RED_SOFT = "#C4584A";
 
-const ZONES = [
-  { label: "AB", monthly: 73.9, saver: 61.6 },
-  { label: "BC", monthly: 73.9, saver: 61.6 },
-  { label: "ABC", monthly: 98.7, saver: 82.4 },
-  { label: "ABCD", monthly: 121.8, saver: 101.5 },
-];
+// Ravintoedun verotusarvo 2026: 8,80 €/ateria, kun työnantajan kustannus 8,80–14,00 € (alv mukaan luettuna).
+// Lähde: Verohallinnon päätös 2026.
+const TAX_VALUE_PER_DAY = 8.80;
 
 const SALARY_EXAMPLES = [
   { label: "2 500 €/kk", gross: 2500, marginalTax: 0.30 },
@@ -25,6 +22,11 @@ const SALARY_EXAMPLES = [
 const SIVUKULUT_RATE = 0.205;
 const EMPLOYEES_MIN = 1;
 const EMPLOYEES_MAX = 1000;
+const WORKDAYS_MIN = 18;
+const WORKDAYS_MAX = 23;
+// Käytännössä lounasetu kertyy vain työkuukausina; vuosiloman aikana ei kertymää.
+// Oletus 11 kk vastaa noin 5 viikon vuosilomaa. Käyttäjä voi säätää.
+const ACTIVE_MONTHS_DEFAULT = 11;
 
 function fmt(n) {
   return n.toLocaleString("fi-FI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -55,15 +57,13 @@ function AnimBar({ value, max, color, label, delay = 0 }) {
   );
 }
 
-export default function TyomatkaetuLaskelma() {
-  const [zoneIdx, setZoneIdx] = useState(0);
+export default function LounasetuLaskelma() {
+  const [workdays, setWorkdays] = useState(22);
   const [salaryIdx, setSalaryIdx] = useState(2);
   const [employees, setEmployees] = useState(30);
-  const [useSaver, setUseSaver] = useState(false);
+  const [activeMonths, setActiveMonths] = useState(ACTIVE_MONTHS_DEFAULT);
 
-  const zone = ZONES[zoneIdx];
   const salary = SALARY_EXAMPLES[salaryIdx];
-  const ticketCost = useSaver ? zone.saver : zone.monthly;
 
   const handleEmployeeInput = (raw) => {
     const num = Number(raw);
@@ -73,31 +73,27 @@ export default function TyomatkaetuLaskelma() {
   };
 
   const calc = useMemo(() => {
-    const monthlyBenefit = ticketCost;
-    const yearlyBenefit = monthlyBenefit * 12;
+    // Verotehokas malli: työnantaja kustantaa täsmälleen ravintoedun verotusarvon
+    // → ei sivukuluja työnantajalle, ei verotettavaa etua työntekijälle
+    const monthlyBenefit = TAX_VALUE_PER_DAY * workdays;
+    const yearlyBenefit = monthlyBenefit * activeMonths;
 
-    // As salary increase
+    // Vertailu palkankorotukseen (sama euromäärä bruttopalkkana)
     const employerCostSalary = monthlyBenefit * (1 + SIVUKULUT_RATE);
     const employeeNetSalary = monthlyBenefit * (1 - salary.marginalTax);
-    const employerCostSalaryYear = employerCostSalary * 12;
-    const employeeNetSalaryYear = employeeNetSalary * 12;
 
-    // As commuter benefit (tax-free, no sivukulut)
+    // Lounasetuna (verovapaa, ei sivukuluja)
     const employerCostBenefit = monthlyBenefit;
-    const employeeNetBenefit = monthlyBenefit; // tax-free
-    const employerCostBenefitYear = employerCostBenefit * 12;
-    const employeeNetBenefitYear = employeeNetBenefit * 12;
+    const employeeNetBenefit = monthlyBenefit;
 
-    // Savings
     const employerSavingsMonth = employerCostSalary - employerCostBenefit;
-    const employerSavingsYear = employerSavingsMonth * 12;
+    const employerSavingsYear = employerSavingsMonth * activeMonths;
     const employeeGainMonth = employeeNetBenefit - employeeNetSalary;
-    const employeeGainYear = employeeGainMonth * 12;
+    const employeeGainYear = employeeGainMonth * activeMonths;
 
-    // For N employees
     const totalEmployerSavingsYear = employerSavingsYear * employees;
-    const totalCostBenefitYear = employerCostBenefitYear * employees;
-    const totalCostSalaryYear = employerCostSalaryYear * employees;
+    const totalCostBenefitYear = employerCostBenefit * activeMonths * employees;
+    const totalCostSalaryYear = employerCostSalary * activeMonths * employees;
 
     return {
       monthlyBenefit, yearlyBenefit,
@@ -105,10 +101,9 @@ export default function TyomatkaetuLaskelma() {
       employerCostBenefit, employeeNetBenefit,
       employerSavingsMonth, employerSavingsYear,
       employeeGainMonth, employeeGainYear,
-      employerCostSalaryYear, employerCostBenefitYear,
       totalEmployerSavingsYear, totalCostBenefitYear, totalCostSalaryYear,
     };
-  }, [ticketCost, salary, employees]);
+  }, [workdays, salary, employees, activeMonths]);
 
   const maxBar = Math.max(calc.employerCostSalary, calc.monthlyBenefit);
 
@@ -128,7 +123,7 @@ export default function TyomatkaetuLaskelma() {
         <div style={{
           position: "absolute", top: -30, right: -30,
           width: 140, height: 140, borderRadius: "50%",
-          background: "rgba(0,122,201,0.15)",
+          background: "rgba(46,125,107,0.18)",
         }} />
         <div style={{ position: "relative" }}>
           <div style={{
@@ -136,58 +131,84 @@ export default function TyomatkaetuLaskelma() {
             fontSize: 12, letterSpacing: 2, textTransform: "uppercase",
             color: "rgba(255,255,255,0.55)", marginBottom: 6,
           }}>
-            Verologia × HSL
+            Verologia
           </div>
           <h1 style={{
             fontFamily: "'DM Serif Display', serif",
             fontSize: 26, fontWeight: 400, margin: 0, lineHeight: 1.25,
             color: "#fff",
           }}>
-            Palkankorotus vai työmatkaetu?
+            Palkankorotus vai lounasetu?
           </h1>
           <p style={{
             fontSize: 14, color: "rgba(255,255,255,0.7)",
             margin: "8px 0 0", lineHeight: 1.5,
           }}>
-            Vertailu: sama euromäärä bruttopalkassa vs. verovapaana työsuhde-etuna
+            Vertailu: sama euromäärä bruttopalkassa vs. ravintoetuna (lounaskortti)
           </p>
         </div>
       </div>
 
       <div style={{ padding: "16px 16px 100px" }}>
 
-        {/* Zone selector */}
+        {/* Workdays selector */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            marginBottom: 10,
+          }}>
+            <div style={{
+              fontSize: 13, fontWeight: 600, textTransform: "uppercase",
+              letterSpacing: 1.2, color: "rgba(13,38,63,0.5)",
+            }}>
+              Työpäivät kuukaudessa: {workdays}
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(13,38,63,0.5)" }}>
+              {fmt(TAX_VALUE_PER_DAY)} € / päivä
+            </div>
+          </div>
+          <input
+            type="range"
+            min={WORKDAYS_MIN}
+            max={WORKDAYS_MAX}
+            value={workdays}
+            onChange={(e) => setWorkdays(Number(e.target.value))}
+            style={{ width: "100%", accentColor: ACCENT }}
+          />
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            fontSize: 10, color: "rgba(13,38,63,0.3)",
+          }}>
+            <span>18</span><span>20</span><span>22</span><span>23</span>
+          </div>
+        </div>
+
+        {/* Active months selector */}
         <div style={{ marginBottom: 18 }}>
           <div style={{
             fontSize: 13, fontWeight: 600, textTransform: "uppercase",
             letterSpacing: 1.2, color: "rgba(13,38,63,0.5)", marginBottom: 10,
           }}>
-            HSL-vyöhyke
+            Aktiiviset kuukaudet vuodessa: {activeMonths}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {ZONES.map((z, i) => (
-              <button key={z.label} onClick={() => setZoneIdx(i)} style={{
-                flex: 1, padding: "10px 0", fontSize: 14, fontWeight: 600,
-                border: `2px solid ${i === zoneIdx ? HSL_BLUE : "rgba(13,38,63,0.1)"}`,
-                borderRadius: 10,
-                background: i === zoneIdx ? HSL_BLUE : "#fff",
-                color: i === zoneIdx ? "#fff" : BRAND,
-                cursor: "pointer", fontFamily: "inherit",
-                transition: "all 0.2s",
-              }}>
-                {z.label}
-              </button>
-            ))}
-          </div>
+          <input
+            type="range"
+            min={9}
+            max={12}
+            value={activeMonths}
+            onChange={(e) => setActiveMonths(Number(e.target.value))}
+            style={{ width: "100%", accentColor: ACCENT }}
+          />
           <div style={{
             display: "flex", justifyContent: "space-between",
-            marginTop: 8, fontSize: 12, color: "rgba(13,38,63,0.5)",
+            fontSize: 10, color: "rgba(13,38,63,0.3)",
           }}>
-            <span>30 vrk kausilippu: {fmt(zone.monthly)} €</span>
-            <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              <input type="checkbox" checked={useSaver} onChange={(e) => setUseSaver(e.target.checked)} />
-              Säästölippu ({fmt(zone.saver)} €)
-            </label>
+            <span>9</span><span>10</span><span>11</span><span>12</span>
+          </div>
+          <div style={{
+            fontSize: 11, color: "rgba(13,38,63,0.45)", marginTop: 4,
+          }}>
+            Esim. 11 kk vastaa ~5 viikon vuosilomaa
           </div>
         </div>
 
@@ -250,7 +271,7 @@ export default function TyomatkaetuLaskelma() {
             max={EMPLOYEES_MAX}
             value={employees}
             onChange={(e) => setEmployees(Number(e.target.value))}
-            style={{ width: "100%", accentColor: HSL_BLUE }}
+            style={{ width: "100%", accentColor: ACCENT }}
           />
           <div style={{
             display: "flex", justifyContent: "space-between",
@@ -306,7 +327,7 @@ export default function TyomatkaetuLaskelma() {
               fontSize: 12, fontWeight: 700, textTransform: "uppercase",
               letterSpacing: 1.5, color: ACCENT, marginBottom: 12,
             }}>
-              Työmatkaetu ✓
+              Lounasetu ✓
             </div>
             <div style={{ fontSize: 11, color: "rgba(13,38,63,0.5)", marginBottom: 4 }}>
               Työnantaja maksaa /kk
@@ -342,7 +363,7 @@ export default function TyomatkaetuLaskelma() {
             Työnantajan kustannus / kuukausi
           </div>
           <AnimBar value={calc.employerCostSalary} max={maxBar} color={RED_SOFT} label="Palkankorotus (brutto + sivukulut 20,5 %)" delay={0.1} />
-          <AnimBar value={calc.employerCostBenefit} max={maxBar} color={ACCENT} label="Työmatkaetu (ei sivukuluja)" delay={0.2} />
+          <AnimBar value={calc.employerCostBenefit} max={maxBar} color={ACCENT} label="Lounasetu (ei sivukuluja)" delay={0.2} />
 
           <div style={{
             marginTop: 14, fontSize: 13, fontWeight: 700, textTransform: "uppercase",
@@ -351,7 +372,7 @@ export default function TyomatkaetuLaskelma() {
             Työntekijän nettohyöty / kuukausi
           </div>
           <AnimBar value={calc.employeeNetSalary} max={calc.monthlyBenefit} color={RED_SOFT} label={`Palkankorotus (marginaalivero ${Math.round(salary.marginalTax * 100)} %)`} delay={0.3} />
-          <AnimBar value={calc.employeeNetBenefit} max={calc.monthlyBenefit} color={ACCENT} label="Työmatkaetu (veroton)" delay={0.4} />
+          <AnimBar value={calc.employeeNetBenefit} max={calc.monthlyBenefit} color={ACCENT} label="Lounasetu (veroton)" delay={0.4} />
         </div>
 
         {/* Key insight */}
@@ -397,7 +418,7 @@ export default function TyomatkaetuLaskelma() {
             paddingTop: 14,
             fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.6,
           }}>
-            {fmt(calc.monthlyBenefit)} € työmatkaetuna tuottaa työntekijälle <strong style={{ color: "#7FDBBA" }}>
+            {fmt(calc.monthlyBenefit)} € lounasetuna tuottaa työntekijälle <strong style={{ color: "#7FDBBA" }}>
             {fmt(calc.employeeGainMonth)} € enemmän</strong> kuussa kuin sama summa palkankorotuksena.
             Samalla työnantaja <strong style={{ color: "#7FDBBA" }}>säästää {fmt(calc.employerSavingsMonth)} €</strong> sivukuluissa.
           </div>
@@ -434,7 +455,7 @@ export default function TyomatkaetuLaskelma() {
               background: "rgba(46,125,107,0.06)", borderRadius: 10, padding: 14,
             }}>
               <div style={{ fontSize: 11, color: "rgba(13,38,63,0.5)", marginBottom: 4 }}>
-                Työmatkaetu yhteensä
+                Lounasetu yhteensä
               </div>
               <div style={{
                 fontFamily: "'DM Serif Display', serif",
@@ -467,7 +488,7 @@ export default function TyomatkaetuLaskelma() {
           fontSize: 10, color: "rgba(13,38,63,0.35)", lineHeight: 1.6,
           padding: "0 4px",
         }}>
-          Laskelma perustuu HSL:n vuoden 2026 hintoihin, työnantajan sivukuluihin 20,5 % (TyEL, sairausvakuutus, työttömyysvakuutus, tapaturmavakuutus, ryhmähenkivakuutus) ja viitteellisiin marginaaliveroasteisiin. Työsuhdematkalippu on verovapaata 3 400 €/v asti. Todelliset verovaikutukset riippuvat yksilön tilanteesta.
+          Laskelma perustuu vuoden 2026 ravintoedun verotusarvoon 8,80 €/ateria, työnantajan sivukuluihin 20,5 % (TyEL, sairausvakuutus, työttömyysvakuutus, tapaturmavakuutus, ryhmähenkivakuutus) ja viitteellisiin marginaaliveroasteisiin. Laskelmassa oletetaan verotehokas malli: työnantaja kustantaa täsmälleen verotusarvon (8,80 €/päivä), jolloin etu on työntekijälle veroton ja työnantajalle vapaa sivukuluista. Jos työnantaja kustantaa enemmän kuin 8,80 €/päivä, ylittävä osa on verotettavaa palkkaa eikä laskelma sellaisenaan päde. Verotusarvo pätee kun lounaan välittömät kustannukset arvonlisäveroineen ovat 8,80–14,00 € (Verohallinnon päätös 2026). Todelliset verovaikutukset riippuvat yksilön tilanteesta.
           <br /><br />
           Verologia.fi — Työsuhde-etujen koulutus yrityksille
         </div>
