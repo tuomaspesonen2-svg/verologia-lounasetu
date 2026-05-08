@@ -22,8 +22,11 @@ const SALARY_EXAMPLES = [
 const SIVUKULUT_RATE = 0.205;
 const EMPLOYEES_MIN = 1;
 const EMPLOYEES_MAX = 1000;
-const WORKDAYS_MIN = 18;
-const WORKDAYS_MAX = 23;
+// Lounaita kuukaudessa — verotus kohdistuu vain todellisiin käyttökertoihin,
+// ei automaattisesti jokaiselle työpäivälle. Range kattaa kaikki realistiset
+// käyttötasot: kerran viikossa (n. 4) → lähes joka työpäivä (23).
+const LUNCHES_MIN = 1;
+const LUNCHES_MAX = 23;
 // Käytännössä lounasetu kertyy vain työkuukausina; vuosiloman aikana ei kertymää.
 // Oletus 11 kk vastaa noin 5 viikon vuosilomaa. Käyttäjä voi säätää.
 const ACTIVE_MONTHS_DEFAULT = 11;
@@ -58,7 +61,7 @@ function AnimBar({ value, max, color, label, delay = 0 }) {
 }
 
 export default function LounasetuLaskelma() {
-  const [workdays, setWorkdays] = useState(22);
+  const [lunches, setLunches] = useState(18);
   const [salaryIdx, setSalaryIdx] = useState(2);
   const [employees, setEmployees] = useState(30);
   const [activeMonths, setActiveMonths] = useState(ACTIVE_MONTHS_DEFAULT);
@@ -74,8 +77,9 @@ export default function LounasetuLaskelma() {
 
   const calc = useMemo(() => {
     // Verotehokas malli: työnantaja kustantaa täsmälleen ravintoedun verotusarvon
-    // → ei sivukuluja työnantajalle, ei verotettavaa etua työntekijälle
-    const monthlyBenefit = TAX_VALUE_PER_DAY * workdays;
+    // → ei sivukuluja työnantajalle, ei verotettavaa etua työntekijälle.
+    // Etu lasketaan käytettyjen lounaiden mukaan, ei automaattisesti jokaiselle työpäivälle.
+    const monthlyBenefit = TAX_VALUE_PER_DAY * lunches;
     const yearlyBenefit = monthlyBenefit * activeMonths;
 
     // Vertailu palkankorotukseen (sama euromäärä bruttopalkkana)
@@ -103,7 +107,7 @@ export default function LounasetuLaskelma() {
       employeeGainMonth, employeeGainYear,
       totalEmployerSavingsYear, totalCostBenefitYear, totalCostSalaryYear,
     };
-  }, [workdays, salary, employees, activeMonths]);
+  }, [lunches, salary, employees, activeMonths]);
 
   const maxBar = Math.max(calc.employerCostSalary, calc.monthlyBenefit);
 
@@ -151,7 +155,7 @@ export default function LounasetuLaskelma() {
 
       <div style={{ padding: "16px 16px 100px" }}>
 
-        {/* Workdays selector */}
+        {/* Lunches per month selector */}
         <div style={{ marginBottom: 18 }}>
           <div style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -161,25 +165,30 @@ export default function LounasetuLaskelma() {
               fontSize: 13, fontWeight: 600, textTransform: "uppercase",
               letterSpacing: 1.2, color: "rgba(13,38,63,0.5)",
             }}>
-              Työpäivät kuukaudessa: {workdays}
+              Lounaita kuukaudessa: {lunches}
             </div>
             <div style={{ fontSize: 12, color: "rgba(13,38,63,0.5)" }}>
-              {fmt(TAX_VALUE_PER_DAY)} € / päivä
+              {fmt(TAX_VALUE_PER_DAY)} € / lounas
             </div>
           </div>
           <input
             type="range"
-            min={WORKDAYS_MIN}
-            max={WORKDAYS_MAX}
-            value={workdays}
-            onChange={(e) => setWorkdays(Number(e.target.value))}
+            min={LUNCHES_MIN}
+            max={LUNCHES_MAX}
+            value={lunches}
+            onChange={(e) => setLunches(Number(e.target.value))}
             style={{ width: "100%", accentColor: ACCENT }}
           />
           <div style={{
             display: "flex", justifyContent: "space-between",
             fontSize: 10, color: "rgba(13,38,63,0.3)",
           }}>
-            <span>18</span><span>20</span><span>22</span><span>23</span>
+            <span>1</span><span>6</span><span>12</span><span>18</span><span>23</span>
+          </div>
+          <div style={{
+            fontSize: 11, color: "rgba(13,38,63,0.45)", marginTop: 4,
+          }}>
+            Verotusarvo kohdistuu vain käytettyihin lounaisiin. Käyttämättä jäänyt saldo ei verota.
           </div>
         </div>
 
@@ -488,7 +497,7 @@ export default function LounasetuLaskelma() {
           fontSize: 10, color: "rgba(13,38,63,0.35)", lineHeight: 1.6,
           padding: "0 4px",
         }}>
-          Laskelma perustuu vuoden 2026 ravintoedun verotusarvoon 8,80 €/ateria, työnantajan sivukuluihin 20,5 % (TyEL, sairausvakuutus, työttömyysvakuutus, tapaturmavakuutus, ryhmähenkivakuutus) ja viitteellisiin marginaaliveroasteisiin. Laskelmassa oletetaan verotehokas malli: työnantaja kustantaa täsmälleen verotusarvon (8,80 €/päivä), jolloin etu on työntekijälle veroton ja työnantajalle vapaa sivukuluista. Jos työnantaja kustantaa enemmän kuin 8,80 €/päivä, ylittävä osa on verotettavaa palkkaa eikä laskelma sellaisenaan päde. Verotusarvo pätee kun lounaan välittömät kustannukset arvonlisäveroineen ovat 8,80–14,00 € (Verohallinnon päätös 2026). Todelliset verovaikutukset riippuvat yksilön tilanteesta.
+          Laskelma perustuu vuoden 2026 ravintoedun verotusarvoon 8,80 €/ateria, työnantajan sivukuluihin 20,5 % (TyEL, sairausvakuutus, työttömyysvakuutus, tapaturmavakuutus, ryhmähenkivakuutus) ja viitteellisiin marginaaliveroasteisiin. Laskelmassa oletetaan verotehokas malli: työnantaja kustantaa täsmälleen verotusarvon (8,80 €/lounas), jolloin etu on työntekijälle veroton ja työnantajalle vapaa sivukuluista. Verotus kohdistuu vain todellisiin käyttökertoihin, ei automaattisesti jokaiselle työpäivälle — käyttämättä jäänyt saldo ei aiheuta veroa. Jos työnantaja kustantaa enemmän kuin 8,80 €/lounas, ylittävä osa on verotettavaa palkkaa eikä laskelma sellaisenaan päde. Verotusarvo pätee kun lounaan välittömät kustannukset arvonlisäveroineen ovat 8,80–14,00 € (Verohallinnon päätös 2026). Todelliset verovaikutukset riippuvat yksilön tilanteesta.
           <br /><br />
           Verologia.fi — Työsuhde-etujen koulutus yrityksille
         </div>
