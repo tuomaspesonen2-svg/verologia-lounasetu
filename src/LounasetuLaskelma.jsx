@@ -7,6 +7,10 @@ const NAVY = "#0D263F";
 const NAVY_2 = "#0A1E33";
 const ACCENT = "#3C72AB";       // sivuston sininen aksentti
 const ACCENT_SOFT = "#DCE6F1";  // soft blue
+const GREEN = "#1F8A5B";        // säästö / positiivinen
+const GREEN_SOFT = "#7FDBBA";   // säästö tummalla taustalla
+const GREEN_PANEL = "#E3F2EA";  // vaalea vihreä paneeli
+const RED = "#C4584A";          // lisäkustannus / epäedullinen
 const SAND = "#F3F2EC";
 const INK = "#14202E";
 const MUTED = "#5A6675";
@@ -192,7 +196,7 @@ Palkankorotus vai lounasetu?
 </h1>
 <p style={{
 fontFamily: BODY, fontSize: 14.5, color: "rgba(255,255,255,0.72)",
-margin: "10px 0 0", lineHeight: 1.55, maxWidth: 520,
+margin: "10px auto 0", lineHeight: 1.55, maxWidth: 520,
 }}>
 Vertailu: työnantajan verovapaa osuus lounasetuna (lounaskortti) vs. sama summa bruttopalkkana.
 </p>
@@ -329,15 +333,15 @@ boxShadow: "0 10px 30px -14px rgba(60,114,171,0.4)",
 <div style={{ ...card, marginBottom: 16 }}>
 <Eyebrow><span style={{ color: MUTED }}>Työnantajan kustannus / kuukausi</span></Eyebrow>
 <div style={{ marginTop: 14 }}>
-<AnimBar value={calc.employerCostSalary} max={maxBar} color={MUTED} label="Palkankorotus (brutto + sivukulut 20,5 %)" delay={0.1} />
-<AnimBar value={calc.employerCostBenefit} max={maxBar} color={ACCENT} label="Lounasetu (työnantajan osuus, ei sivukuluja)" delay={0.2} />
+<AnimBar value={calc.employerCostSalary} max={maxBar} color={RED} label="Palkankorotus (brutto + sivukulut 20,5 %)" delay={0.1} />
+<AnimBar value={calc.employerCostBenefit} max={maxBar} color={GREEN} label="Lounasetu (työnantajan osuus, ei sivukuluja)" delay={0.2} />
 </div>
 <div style={{ marginTop: 12 }}>
 <Eyebrow><span style={{ color: MUTED }}>Työntekijän nettohyöty / kuukausi</span></Eyebrow>
 </div>
 <div style={{ marginTop: 14 }}>
-<AnimBar value={calc.employeeNetSalary} max={calc.monthlyBenefit} color={MUTED} label={`Palkankorotus (marginaalivero ${Math.round(salary.marginalTax * 100)} %)`} delay={0.3} />
-<AnimBar value={calc.employeeNetBenefit} max={calc.monthlyBenefit} color={ACCENT} label="Lounasetu (veroton)" delay={0.4} />
+<AnimBar value={calc.employeeNetSalary} max={calc.monthlyBenefit} color={RED} label={`Palkankorotus (marginaalivero ${Math.round(salary.marginalTax * 100)} %)`} delay={0.3} />
+<AnimBar value={calc.employeeNetBenefit} max={calc.monthlyBenefit} color={GREEN} label="Lounasetu (veroton)" delay={0.4} />
 </div>
 </div>
 
@@ -350,13 +354,13 @@ borderRadius: 12, padding: 22, color: "#fff", marginBottom: 16,
 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, margin: "16px 0" }}>
 <div>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Työnantaja säästää /kk</div>
-<div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: ACCENT_SOFT, letterSpacing: "-.02em" }}>
+<div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
 {fmt(calc.employerSavingsMonth)} €
 </div>
 </div>
 <div>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Työntekijä hyötyy /kk</div>
-<div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: ACCENT_SOFT, letterSpacing: "-.02em" }}>
+<div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
 +{fmt(calc.employeeGainMonth)} €
 </div>
 </div>
@@ -365,9 +369,9 @@ borderRadius: 12, padding: 22, color: "#fff", marginBottom: 16,
 borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 14,
 fontSize: 13.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.6,
 }}>
-Työnantajan verovapaa osuus {fmt(calc.monthlyBenefit)} €/kk lounasetuna tuottaa työntekijälle <strong style={{ color: ACCENT_SOFT }}>
+Työnantajan verovapaa osuus {fmt(calc.monthlyBenefit)} €/kk lounasetuna tuottaa työntekijälle <strong style={{ color: GREEN_SOFT }}>
 {fmt(calc.employeeGainMonth)} € enemmän</strong> kuussa kuin sama summa palkankorotuksena.
-Samalla työnantaja <strong style={{ color: ACCENT_SOFT }}>säästää {fmt(calc.employerSavingsMonth)} €</strong> sivukuluissa.
+Samalla työnantaja <strong style={{ color: GREEN_SOFT }}>säästää {fmt(calc.employerSavingsMonth)} €</strong> sivukuluissa.
 </div>
 </div>
 
@@ -377,20 +381,20 @@ Samalla työnantaja <strong style={{ color: ACCENT_SOFT }}>säästää {fmt(calc
 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
 <div style={{ background: SAND, borderRadius: 10, padding: 14 }}>
 <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Palkankorotus yhteensä</div>
-<div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-.02em" }}>
+<div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: RED, letterSpacing: "-.02em" }}>
 {fmt(calc.totalCostSalaryYear)} €
 </div>
 </div>
-<div style={{ background: ACCENT_SOFT, borderRadius: 10, padding: 14 }}>
+<div style={{ background: GREEN_PANEL, borderRadius: 10, padding: 14 }}>
 <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Lounasetu yhteensä</div>
-<div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: NAVY, letterSpacing: "-.02em" }}>
+<div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: GREEN, letterSpacing: "-.02em" }}>
 {fmt(calc.totalCostBenefitYear)} €
 </div>
 </div>
 </div>
 <div style={{ marginTop: 14, textAlign: "center", padding: 14, borderRadius: 10, background: NAVY }}>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Työnantajan kokonaissäästö vuodessa</div>
-<div style={{ fontFamily: HEAD, fontSize: 28, fontWeight: 800, color: ACCENT_SOFT, letterSpacing: "-.02em" }}>
+<div style={{ fontFamily: HEAD, fontSize: 28, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
 {fmt(calc.totalEmployerSavingsYear)} €
 </div>
 </div>
