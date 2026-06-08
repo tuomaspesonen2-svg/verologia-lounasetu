@@ -112,6 +112,13 @@ border-radius:50%; background:${ACCENT}; cursor:pointer; border:3px solid #fff;
 box-shadow:0 2px 6px rgba(13,38,63,.25); }
 .vl-range::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:${ACCENT};
 cursor:pointer; border:3px solid #fff; box-shadow:0 2px 6px rgba(13,38,63,.25); }
+
+/* Varafallback: pinoa yhteen palstaan kapealla näytöllä myös ilman JS:ää.
+   Luokkapohjainen (ei inline-tyylin attribuuttivalitsin), joten toimii
+   luotettavasti myös Samsung Internet -selaimessa. */
+@media (max-width: 760px){
+  .vlc2{ grid-template-columns: 1fr !important; text-align: center !important; }
+}
 `;
 // Responsiivisuus hoidetaan ResizeObserverilla (mittaa widgetin OMAN leveyden),
 // ei viewport-media-queryllä. Näin layout ei riko ison resoluution puhelimilla,
@@ -316,7 +323,7 @@ value={employees} onChange={(e) => setEmployees(Number(e.target.value))} />
 </div>
 
 {/* Comparison cards */}
-<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginBottom: 16 }}>
+<div className="vlc2" style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginBottom: 16 }}>
 {/* Salary card (neutral) */}
 <div style={{ ...card, background: SAND, boxShadow: "none", textAlign: ctr }}>
 <Eyebrow><span style={{ color: MUTED }}>Palkankorotus</span></Eyebrow>
@@ -370,7 +377,7 @@ background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_2} 100%)`,
 borderRadius: 12, padding: 22, color: "#fff", marginBottom: 16,
 }}>
 <Eyebrow light>Yhteenveto</Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 16, margin: "16px 0", textAlign: ctr }}>
+<div className="vlc2" style={{ display: "grid", gridTemplateColumns: cols2, gap: 16, margin: "16px 0", textAlign: ctr }}>
 <div>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Työnantaja säästää /kk</div>
 <div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
@@ -397,7 +404,7 @@ Samalla työnantaja <strong style={{ color: GREEN_SOFT }}>säästää {fmt(calc.
 {/* Scale */}
 <div style={{ ...card, marginBottom: 16 }}>
 <Eyebrow><span style={{ color: MUTED }}>Skaalattu: {employees} työntekijää / vuosi</span></Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginTop: 14, textAlign: ctr }}>
+<div className="vlc2" style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginTop: 14, textAlign: ctr }}>
 <div style={{ background: SAND, borderRadius: 10, padding: 14 }}>
 <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Palkankorotus yhteensä</div>
 <div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: RED, letterSpacing: "-.02em" }}>
