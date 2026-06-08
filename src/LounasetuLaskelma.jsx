@@ -298,7 +298,7 @@ value={employees} onChange={(e) => setEmployees(Number(e.target.value))} />
 </div>
 
 {/* Comparison cards */}
-<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, marginBottom: 16 }}>
 {/* Salary card (neutral) */}
 <div style={{ ...card, background: SAND, boxShadow: "none" }}>
 <Eyebrow><span style={{ color: MUTED }}>Palkankorotus</span></Eyebrow>
@@ -351,7 +351,7 @@ background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_2} 100%)`,
 borderRadius: 12, padding: 22, color: "#fff", marginBottom: 16,
 }}>
 <Eyebrow light>Yhteenveto</Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, margin: "16px 0" }}>
+<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 16, margin: "16px 0" }}>
 <div>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Työnantaja säästää /kk</div>
 <div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
@@ -378,7 +378,7 @@ Samalla työnantaja <strong style={{ color: GREEN_SOFT }}>säästää {fmt(calc.
 {/* Scale */}
 <div style={{ ...card, marginBottom: 16 }}>
 <Eyebrow><span style={{ color: MUTED }}>Skaalattu: {employees} työntekijää / vuosi</span></Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
+<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, marginTop: 14 }}>
 <div style={{ background: SAND, borderRadius: 10, padding: 14 }}>
 <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Palkankorotus yhteensä</div>
 <div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: RED, letterSpacing: "-.02em" }}>
