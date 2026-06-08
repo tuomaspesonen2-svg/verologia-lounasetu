@@ -1,16 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 /* Verologia-laskuri – sivuston design-järjestelmä
-   Fontit: Bricolage Grotesque (otsikot/numerot) + Inter (leipä)
-   Värit vastaavat verologia.fi:n :root-muuttujia. */
+Fontit: Bricolage Grotesque (otsikot/numerot) + Inter (leipä)
+Värit vastaavat verologia.fi:n :root-muuttujia. */
 const NAVY = "#0D263F";
 const NAVY_2 = "#0A1E33";
-const ACCENT = "#3C72AB";       // sivuston sininen aksentti
-const ACCENT_SOFT = "#DCE6F1";  // soft blue
-const GREEN = "#1F8A5B";        // säästö / positiivinen
-const GREEN_SOFT = "#7FDBBA";   // säästö tummalla taustalla
-const GREEN_PANEL = "#E3F2EA";  // vaalea vihreä paneeli
-const RED = "#C4584A";          // lisäkustannus / epäedullinen
+const ACCENT = "#3C72AB"; // sivuston sininen aksentti
+const ACCENT_SOFT = "#DCE6F1"; // soft blue
+const GREEN = "#1F8A5B"; // säästö / positiivinen
+const GREEN_SOFT = "#7FDBBA"; // säästö tummalla taustalla
+const GREEN_PANEL = "#E3F2EA"; // vaalea vihreä paneeli
+const RED = "#C4584A"; // lisäkustannus / epäedullinen
 const SAND = "#F3F2EC";
 const INK = "#14202E";
 const MUTED = "#5A6675";
@@ -106,15 +106,16 @@ transition: `width 0.8s cubic-bezier(0.4,0,0.2,1) ${delay}s`,
 
 const sliderCSS = `
 .vl-range{ -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:999px;
-  background:${LINE}; outline:none; }
+background:${LINE}; outline:none; }
 .vl-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:22px; height:22px;
-  border-radius:50%; background:${ACCENT}; cursor:pointer; border:3px solid #fff;
-  box-shadow:0 2px 6px rgba(13,38,63,.25); }
+border-radius:50%; background:${ACCENT}; cursor:pointer; border:3px solid #fff;
+box-shadow:0 2px 6px rgba(13,38,63,.25); }
 .vl-range::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:${ACCENT};
-  cursor:pointer; border:3px solid #fff; box-shadow:0 2px 6px rgba(13,38,63,.25); }
-
-@media(max-width:600px){ div[style*="minmax(0"]{grid-template-columns:1fr !important} div[style*="minmax(0"]>div{text-align:center !important} }
+cursor:pointer; border:3px solid #fff; box-shadow:0 2px 6px rgba(13,38,63,.25); }
 `;
+// Responsiivisuus hoidetaan ResizeObserverilla (mittaa widgetin OMAN leveyden),
+// ei viewport-media-queryllä. Näin layout ei riko ison resoluution puhelimilla,
+// joissa näytön skaalaus voi nostaa CSS-leveyden yli 600px:n (esim. Samsung).
 
 export default function LounasetuLaskelma() {
 const [lunches, setLunches] = useState(18);
@@ -122,6 +123,21 @@ const [salaryIdx, setSalaryIdx] = useState(2);
 const [employees, setEmployees] = useState(30);
 const [activeMonths, setActiveMonths] = useState(ACTIVE_MONTHS_DEFAULT);
 const [mealPrice, setMealPrice] = useState(MEAL_PRICE_DEFAULT);
+
+// Responsiivinen pinoaminen widgetin OMAN leveyden mukaan (ei viewportin).
+const rootRef = useRef(null);
+const [narrow, setNarrow] = useState(false);
+useEffect(() => {
+const el = rootRef.current;
+if (!el || typeof ResizeObserver === "undefined") return;
+const ro = new ResizeObserver((entries) => {
+setNarrow(entries[0].contentRect.width < 560);
+});
+ro.observe(el);
+return () => ro.disconnect();
+}, []);
+const cols2 = narrow ? "1fr" : "minmax(0,1fr) minmax(0,1fr)";
+const ctr = narrow ? "center" : "left";
 
 const salary = SALARY_EXAMPLES[salaryIdx];
 
@@ -135,7 +151,7 @@ setEmployees(clamped);
 const calc = useMemo(() => {
 // Työntekijän omavastuu = 75 % aterian hinnasta, väh. 8,80 €.
 const omavastuu = Math.max(0.75 * mealPrice, EMPLOYEE_MIN_SHARE);
-// Työnantajan verovapaa osuus = aterian hinta − omavastuu (enintään 25 %).
+// Työnantajan verovapaa osuus = aterian hinta - omavastuu (enintään 25 %).
 const employerPerMeal = Math.max(0, mealPrice - omavastuu);
 
 const monthlyBenefit = employerPerMeal * lunches;
@@ -172,7 +188,7 @@ border: `1px solid ${LINE}`, boxShadow: SHADOW_SM,
 };
 
 return (
-<div style={{ minHeight: "100vh", background: WHITE, fontFamily: BODY, color: INK }}>
+<div ref={rootRef} style={{ minHeight: "100vh", background: WHITE, fontFamily: BODY, color: INK }}>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>{sliderCSS}</style>
@@ -300,9 +316,9 @@ value={employees} onChange={(e) => setEmployees(Number(e.target.value))} />
 </div>
 
 {/* Comparison cards */}
-<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, marginBottom: 16 }}>
+<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginBottom: 16 }}>
 {/* Salary card (neutral) */}
-<div style={{ ...card, background: SAND, boxShadow: "none" }}>
+<div style={{ ...card, background: SAND, boxShadow: "none", textAlign: ctr }}>
 <Eyebrow><span style={{ color: MUTED }}>Palkankorotus</span></Eyebrow>
 <div style={{ fontSize: 12, color: MUTED, margin: "14px 0 4px" }}>Työnantaja maksaa /kk</div>
 <div style={{ fontFamily: HEAD, fontSize: 26, fontWeight: 800, color: INK, letterSpacing: "-.02em" }}>
@@ -318,6 +334,7 @@ value={employees} onChange={(e) => setEmployees(Number(e.target.value))} />
 <div style={{
 ...card, border: `2px solid ${ACCENT}`,
 boxShadow: "0 10px 30px -14px rgba(60,114,171,0.4)",
+textAlign: ctr,
 }}>
 <Eyebrow>Lounasetu ✓</Eyebrow>
 <div style={{ fontSize: 12, color: MUTED, margin: "14px 0 4px" }}>Työnantaja maksaa /kk</div>
@@ -353,7 +370,7 @@ background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_2} 100%)`,
 borderRadius: 12, padding: 22, color: "#fff", marginBottom: 16,
 }}>
 <Eyebrow light>Yhteenveto</Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 16, margin: "16px 0" }}>
+<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 16, margin: "16px 0", textAlign: ctr }}>
 <div>
 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Työnantaja säästää /kk</div>
 <div style={{ fontFamily: HEAD, fontSize: 24, fontWeight: 800, color: GREEN_SOFT, letterSpacing: "-.02em" }}>
@@ -380,7 +397,7 @@ Samalla työnantaja <strong style={{ color: GREEN_SOFT }}>säästää {fmt(calc.
 {/* Scale */}
 <div style={{ ...card, marginBottom: 16 }}>
 <Eyebrow><span style={{ color: MUTED }}>Skaalattu: {employees} työntekijää / vuosi</span></Eyebrow>
-<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, marginTop: 14 }}>
+<div style={{ display: "grid", gridTemplateColumns: cols2, gap: 12, marginTop: 14, textAlign: ctr }}>
 <div style={{ background: SAND, borderRadius: 10, padding: 14 }}>
 <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Palkankorotus yhteensä</div>
 <div style={{ fontFamily: HEAD, fontSize: 19, fontWeight: 800, color: RED, letterSpacing: "-.02em" }}>
